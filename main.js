@@ -7,7 +7,6 @@ function check_for_new_image() {
 	$.ajax({
 		dataType: "json",
 		url: bucket_url + 'current.json',
-		data: '',
 		cache: false,
 		success: function(data) {
 				if (data.name !== current_filename) {
@@ -16,4 +15,4 @@ function check_for_new_image() {
 				}
 		}
 	});
-}
+}`

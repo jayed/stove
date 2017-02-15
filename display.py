@@ -21,7 +21,10 @@ sc = SlackClient(slack_token)
 if sc.rtm_connect():
     while True:
         for event in sc.rtm_read():
+
+
             if event['type'] == 'file_created' or event['type'] == 'file_shared':
+                # if we receive a file upload
                 slack_file_dets = sc.api_call(
                     'files.info',
                     file = event['file']['id'],
@@ -32,7 +35,8 @@ if sc.rtm_connect():
 
                 if channel == 'C40UJH0CV':
                     download_url = slack_file_dets['file']['url_private']
-                    
+                    print "new image detected, %s" % download_url
+
                     auth_value = 'Bearer %s' % slack_token
                     headers = {'Authorization': auth_value}
                     response = requests.get(download_url, headers=headers)
