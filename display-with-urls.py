@@ -35,17 +35,21 @@ def post_image_to_aws(image_url, file_ext, headers):
 
 
 
+# Grab our vars from the env
 slack_token = environ['slack_token']
 aws_access_key_id =  environ['aws_access_key_id']
 aws_secret_access_key = environ['aws_secret_access_key']
+slack_channel = environ['slack_channel']
 
+
+# everything we do happens through our slack clent object
 sc = SlackClient(slack_token)
 
 if sc.rtm_connect():
     while True:
         for event in sc.rtm_read():
-            if 'channel' in event.keys() and event['channel'] == 'C40UJH0CV':
-                # if we're in our 'screenshare' channel
+            if 'channel' in event.keys() and event['channel'] == slack_channel:
+                
 
                 # The two values we're intereted in finding
                 image_url = ''
@@ -53,7 +57,7 @@ if sc.rtm_connect():
 
                 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
 
-                if event['type'] == 'file_created' or event['type'] == 'file_shared':
+                if 'subtype' in event and (event['subtype'] == 'file_created' or event['subtype'] == 'file_share'):
                     # if someone uploads a file to slack
                     slack_file_dets = sc.api_call(
                         'files.info',
@@ -61,7 +65,6 @@ if sc.rtm_connect():
                         token = slack_token
                     )
 
-                    channel = slack_file_dets['file']['channels'][0]
                     image_url = slack_file_dets['file']['url_private']
                     file_ext = splitext(slack_file_dets['file']['name'])[1]
 
