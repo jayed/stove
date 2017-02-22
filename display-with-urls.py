@@ -91,7 +91,7 @@ def inspect_for_emoji(event, current_color):
             if 'night' in reaction['name'] and reaction['count'] >= 1:
                 bg_color = '#000'
 
-    elif not ('message' in event.keys() and 'file' in event['message'].keys() and 'reactions' in event['message']['file'].keys()):
+    elif ('message' in event.keys() and 'file' in event['message'].keys() and 'reactions' in event['message']['file'].keys()):
         # if an emoji has been removed
         # TODO filter on night emojis not existing
         bg_color = '#fff'
