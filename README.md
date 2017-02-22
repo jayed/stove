@@ -10,16 +10,16 @@ on a monitor (hopefully hanging on a wall in a fun space!)
 You'll need at least Python 2.7 to get rolling.
 
 Copy your settings file and fill it out
-    $ cp settings.sh.example settings.sh
+`$ cp settings.sh.example settings.sh`
 
 Edit your settings file, then export the vars to the env
-    $ source ./settings.sh
+`$ source ./settings.sh`
 
 Install the dependencies
-    $ pip install requirements.txt
+`$ pip install requirements.txt`
 
 Then start the thing up!
-    $ nohup python display-with-urls.py &
+`$ nohup python display-with-urls.py &`
 
 ## License
 
