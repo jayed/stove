@@ -10,10 +10,10 @@ function check_for_new_image() {
 	var todayMinutes = new Date().getMinutes();
 
 	// Between 11:00AM and 11:05AM display big red "SCRUM" image instead of regular image
-	if (todayHours === 11 && todayMinutes >= 00 && todayMinutes < 05) {
-		current_filename = "./SCRUM.png";
+	if (todayHours === 11 && todayMinutes >= 00 && todayMinutes < 35) {
+		current_filename = "./gold_scrum.gif";
 		$('#image-container').attr("src", current_filename);
-		current_bg_color = "RED"
+		current_bg_color = "#242424"
 		$('body').css('background-color', current_bg_color);
 	} else {
 		$.ajax({
