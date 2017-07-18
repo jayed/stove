@@ -1,18 +1,17 @@
 var current_filename = '';
 var current_bg_color = '#fff';
 
-var bucket_url = 'https://s3.amazonaws.com/lilscreensharetest/';
+var bucket_url = 'https://s3.amazonaws.com/lilscreenshare/';
 
 // todo: put destinations in current.json
 var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana'];
 
 
 function update_stove() {
-	console.log('updati');
 	// here, we check to see if we have a scheduled event,
 	// and if not, display the current
 	// we should likely pull scheduled events from current.json?
-	if (!run_scheduled(18, 49, 5, './assets/img/gold_scrum.gif', '#242424')) {  //standup time - start at 11:00 and run for 5 mins
+	if (!run_scheduled(11, 0, 5, './assets/img/gold_scrum.gif', '#242424')) {  //standup time - start at 11:00 and run for 5 mins
 		get_current();
 	}
 }
