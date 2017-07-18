@@ -28,46 +28,14 @@ slack_token = environ['slack_token']
 slack_channel = environ['slack_channel']
 
 
-# Possible values for screens. config this.
-destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana']
-
-# the screen where an image will appear when it's first posted
-default_screen = destinations[0]
-
-# Our destinations will be bundled in a json object that kinda looks like
-# this (and is the thing watched by the js, current.js, in the screen's
-# browser to see if it needs to update it's pic)
-
-'''
-{
-'racehorse': {'bg':'#ffffff',
-              'current': 'url to image',
-              'previous': 'url to image'},
-
-'icecream': {'bg':'#ffffff',
-              'current': 'url to image',
-              'previous': 'url to image'}
-}
-'''
-
-
-# Keep track of our existing status so that we only generate
-# a new current.json file if we have a change
-existing_status = {}
-
-
-# Slack headers
-slack_reqeust_headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
-auth_value = 'Bearer %s' % slack_token
-slack_reqeust_headers['Authorization'] = auth_value
-
-# Our connection to the Slack API
-sc = SlackClient(slack_token)
-
-
 def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
+
+    # Slack headers
+    slack_reqeust_headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
+    auth_value = 'Bearer %s' % slack_token
+    slack_reqeust_headers['Authorization'] = auth_value
 
     if held_by_slack:
         response = requests.get(image_url, headers=slack_reqeust_headers)
@@ -92,28 +60,55 @@ def update_current(generated_status):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
 
-    session = boto3.Session(aws_access_key_id=aws_access_key_id,
-                    aws_secret_access_key=aws_secret_access_key)
-    s3 = session.resource("s3")
-    s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
-
-    existing_status = generated_status
+        session = boto3.Session(aws_access_key_id=aws_access_key_id,
+                        aws_secret_access_key=aws_secret_access_key)
+        s3 = session.resource("s3")
+        s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
 
 
 def build_config():
+
+    # Possible values for screens. config this.
+    destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana']
+
+    # the screen where an image will appear when it's first posted
+    default_screen = destinations[0]
+
+    # Our destinations will be bundled in a json object that kinda looks like
+    # this (and is the thing watched by the js, current.js, in the screen's
+    # browser to see if it needs to update it's pic)
+
+    '''
+    {
+    'racehorse': { 'url': 'http:// bucket at s3'},
+                    'id': 'some slack generated guid',
+                    'bg': '#fff'},
+
+    'icecream':  { 'url': 'http:// bucket at s3'},
+                    'id': 'some slack generated guid',
+                    'bg': '#000'},
+    }
+    '''
+
     print "building config"
 
-    generated_status = {}
+    # Keep track of our existing status so that we only generate
+    # a new current.json file if we have a change
+    existing_status = {}
+
+    # Our connection to the Slack API
+    sc = SlackClient(slack_token)
 
     if sc.rtm_connect():
         while True:
+            generated_status = {}
+
             for event in sc.rtm_read():
                 # retrieve recent posts in our channel
                 history = sc.api_call('channels.history', channel=slack_channel, inclusive='true', count=len(destinations))
-
+                
                 # find images posted to channel and build status to update
                 for kl in reversed(history['messages']):
-                    destination = default_screen # our default screen
 
                     # uploaded image
                     if 'file' in kl.keys() and 'url_private' in kl['file'].keys():
@@ -122,45 +117,57 @@ def build_config():
                             for reaction in kl['file']['reactions']:
                                 if reaction['name'] in destinations:
                                     destination = reaction['name']
+                        else:
+                            destination = default_screen
 
                         url = kl['file']['url_private']
+                        slack_image_id = kl['ts']
 
-                        if url not in already_blasted.keys() or already_blasted[url] != destination:
+                        if destination not in existing_status.keys() or existing_status[destination]['id'] != slack_image_id:
                             url_pieces = urlparse(url)
                             file_ext = splitext(basename(url_pieces.path))[1]
-                            image_filename = post_image_to_aws(kl['file']['url_private'], file_ext, held_by_slack=True)
-                            generated_status[destination] = {'url': image_filename}
-                            already_blasted[url] = destination
+                            image_filename = post_image_to_aws(url, file_ext, held_by_slack=True)
+                            new_dest = {destination: {'id': slack_image_id, 'url': image_filename}}
+                            generated_status.update(new_dest)
+
 
                     # if someone pastes text with a link to an image in it
-                    if 'message' in event.keys() and 'attachments' in event['message'].keys() and 'image_url' in event['message']['attachments'][0].keys():
-                        if 'reactions' in event['message'].keys():
-                            for reaction in event['message']['reactions']:
+                    if 'attachments' in kl.keys() and 'image_url' in kl['attachments'][0].keys():
+                        if 'reactions' in kl.keys():
+                            for reaction in kl['reactions']:
                                 if reaction['name'] in destinations:
                                     destination = reaction['name']
+                        else:
+                            destination = default_screen
 
-                        image_url = event['message']['attachments'][0]['image_url']
+                        url = kl['attachments'][0]['image_url']
+                        slack_image_id = kl['ts']
 
-                        if image_url not in already_blasted.keys() or already_blasted[image_url] != destination:
-                            url_pieces = urlparse(image_url)
+                        if destination not in existing_status.keys() or existing_status[destination]['id'] != slack_image_id:
+                            url_pieces = urlparse(url)
                             file_ext = splitext(basename(url_pieces.path))[1]
-                            image_filename = post_image_to_aws(image_url, file_ext)
-                            generated_status[destination] = {'url': image_filename}
+                            image_filename = post_image_to_aws(url, file_ext)
+                            new_dest = {destination: {'id': slack_image_id, 'url': image_filename}}
+                            generated_status.update(new_dest)
 
-                            already_blasted[image_url] = destination
+
+                delta_exists = False
+                for dest in generated_status:
+                    if dest not in existing_status.keys():
+                        delta_exists = True
+                    elif generated_status[dest]['id'] != existing_status[dest]['id']:
+                        delta_exists = True
 
 
-                print already_blasted
+
+                if delta_exists:
+                    update_current(generated_status)
+                    existing_status = generated_status
+
                 time.sleep(1)
 
-            if existing_status != generated_status:
-                #print generated_status
-                update_current(generated_status)
 
     else:
         print "Connection to Slack unavailable"
-
-# todo: refactor the way we don't post dupes
-already_blasted = {}
 
 build_config()
