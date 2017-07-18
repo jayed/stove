@@ -18,6 +18,9 @@ Edit your settings file, then export the vars to the env
 Install the dependencies
 `$ pip install requirements.txt`
 
+Test by listing your Slack Channels
+`$ python test_env.py`
+
 Then start the thing up!
 `$ nohup python display-with-urls.py &`
 

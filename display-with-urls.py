@@ -23,13 +23,13 @@ $source ./settings.sh
 
 aws_access_key_id =  environ['aws_access_key_id']
 aws_secret_access_key = environ['aws_secret_access_key']
-aws_s3_bucket = environ['aws_s3_bucket']
+aws_bucket_name = environ['aws_bucket_name']
 slack_token = environ['slack_token']
-slack_channel = environ['slack_channel_name']
+slack_channel = environ['slack_channel']
 
 
-# Possible values for screens
-destinations =
+# Possible values for screens. config this.
+destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana']
 
 # the screen where an image will appear when it's first posted
 default_screen = destinations[0]
@@ -64,14 +64,10 @@ slack_reqeust_headers['Authorization'] = auth_value
 # Our connection to the Slack API
 sc = SlackClient(slack_token)
 
-# todo: refactor the way we don't post dupes
-already_blasted = []
 
 def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
-
-    already_blasted.append(image_url)
 
     if held_by_slack:
         response = requests.get(image_url, headers=slack_reqeust_headers)
@@ -88,7 +84,7 @@ def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     session = boto3.Session(aws_access_key_id=aws_access_key_id,
                             aws_secret_access_key=aws_secret_access_key)
     s3 = session.resource("s3")
-    s3.Bucket(aws_s3_bucket).put_object(Key=image_filename, Body=data)
+    s3.Bucket(aws_bucket_name).put_object(Key=image_filename, Body=data)
 
     return image_filename
 
@@ -99,7 +95,9 @@ def update_current(generated_status):
     session = boto3.Session(aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key)
     s3 = session.resource("s3")
-    s3.Object('lilscreensharetest', 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
+    s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
+
+    existing_status = generated_status
 
 
 def build_config():
@@ -112,6 +110,7 @@ def build_config():
             for event in sc.rtm_read():
                 # retrieve recent posts in our channel
                 history = sc.api_call('channels.history', channel=slack_channel, inclusive='true', count=len(destinations))
+
                 # find images posted to channel and build status to update
                 for kl in reversed(history['messages']):
                     destination = default_screen # our default screen
@@ -126,12 +125,12 @@ def build_config():
 
                         url = kl['file']['url_private']
 
-                        if url not in already_blasted:
+                        if url not in already_blasted.keys() or already_blasted[url] != destination:
                             url_pieces = urlparse(url)
                             file_ext = splitext(basename(url_pieces.path))[1]
-
                             image_filename = post_image_to_aws(kl['file']['url_private'], file_ext, held_by_slack=True)
                             generated_status[destination] = {'url': image_filename}
+                            already_blasted[url] = destination
 
                     # if someone pastes text with a link to an image in it
                     if 'message' in event.keys() and 'attachments' in event['message'].keys() and 'image_url' in event['message']['attachments'][0].keys():
@@ -142,22 +141,26 @@ def build_config():
 
                         image_url = event['message']['attachments'][0]['image_url']
 
-                        if image_url not in already_blasted:
+                        if image_url not in already_blasted.keys() or already_blasted[image_url] != destination:
                             url_pieces = urlparse(image_url)
                             file_ext = splitext(basename(url_pieces.path))[1]
+                            image_filename = post_image_to_aws(image_url, file_ext)
+                            generated_status[destination] = {'url': image_filename}
 
-                        image_filename = post_image_to_aws(image_url, file_ext)
-                        generated_status[destination] = {'url': image_filename}
+                            already_blasted[image_url] = destination
 
+
+                print already_blasted
                 time.sleep(1)
 
             if existing_status != generated_status:
-                print generated_status
+                #print generated_status
                 update_current(generated_status)
 
-            generated_status = {}
     else:
         print "Connection to Slack unavailable"
 
+# todo: refactor the way we don't post dupes
+already_blasted = {}
 
 build_config()
