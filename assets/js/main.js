@@ -4,7 +4,7 @@ var current_bg_color = '#fff';
 var bucket_url = 'https://s3.amazonaws.com/lilscreenshare/';
 
 // todo: put destinations in current.json
-var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana'];
+var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish'];
 
 
 function update_stove() {

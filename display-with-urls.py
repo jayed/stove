@@ -67,9 +67,8 @@ def update_current(generated_status):
 
 
 def build_config():
-
     # Possible values for screens. config this.
-    destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana']
+    destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish']
 
     # the screen where an image will appear when it's first posted
     default_screen = destinations[0]
@@ -106,10 +105,9 @@ def build_config():
             for event in sc.rtm_read():
                 # retrieve recent posts in our channel
                 history = sc.api_call('channels.history', channel=slack_channel, inclusive='true', count=len(destinations))
-                
-                # find images posted to channel and build status to update
-                for kl in reversed(history['messages']):
 
+                # find images posted to channel and build status to update
+                for kl in history['messages']:
                     # uploaded image
                     if 'file' in kl.keys() and 'url_private' in kl['file'].keys():
                         # see if we have reactions along with our uploaded file
@@ -157,8 +155,6 @@ def build_config():
                         delta_exists = True
                     elif generated_status[dest]['id'] != existing_status[dest]['id']:
                         delta_exists = True
-
-
 
                 if delta_exists:
                     update_current(generated_status)
