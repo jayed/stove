@@ -1,12 +1,14 @@
+import json
+import random
+import string
+import time
 from os import environ
 from os.path import splitext, basename
-import time, json, string, random
 from urlparse import urlparse
 
-from slackclient import SlackClient
-import requests
 import boto3
-
+import requests
+from slackclient import SlackClient
 
 '''
 The logic in this script wires a slack channel to s3
