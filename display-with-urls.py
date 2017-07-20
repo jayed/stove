@@ -4,7 +4,8 @@ import time, json, string, random
 from urlparse import urlparse
 
 from slackclient import SlackClient
-import requests, boto3
+import requests
+import boto3
 
 
 '''
