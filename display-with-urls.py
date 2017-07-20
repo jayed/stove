@@ -34,6 +34,13 @@ def main():
     build_config()
 
 
+def s3_connect():
+    """ Connect to S3 and return the session resource """
+    session = boto3.Session(aws_access_key_id=aws_access_key_id,
+                            aws_secret_access_key=aws_secret_access_key)
+    return session.resource("s3")
+
+
 def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
@@ -55,21 +62,17 @@ def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     image_filename = '%s%s' % (filename, file_ext)
 
     # post image with new filename to s3
-    session = boto3.Session(aws_access_key_id=aws_access_key_id,
-                            aws_secret_access_key=aws_secret_access_key)
-    s3 = session.resource("s3")
+    s3 = s3_connect()
     s3.Bucket(aws_bucket_name).put_object(Key=image_filename, Body=data)
 
     return image_filename
 
+
 def update_current(generated_status):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
-
-        session = boto3.Session(aws_access_key_id=aws_access_key_id,
-                        aws_secret_access_key=aws_secret_access_key)
-        s3 = session.resource("s3")
-        s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
+    s3 = s3_connect()
+    s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
 
 
 def build_config():
