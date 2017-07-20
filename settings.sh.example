@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export slack_token=your_value
-export aws_secret_access_key=your_value
-export aws_access_key_id=your_value
-export aws_bucket_name=your_value
-export slack_channel_name=your_value
+export SLACK_TOKEN=your_value
+export AWS_SECRET_ACCESS_KEY=your_value
+export AWS_ACCESS_KEY_ID=your_value
+export AWS_BUCKET_NAME=your_value
+export SLACK_CHANNEL=your_value

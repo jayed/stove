@@ -2,7 +2,7 @@ ScreenShare - Quickly share a visual message
 
 =====
 
-ScreenShare creates an aquaduct that will route images placed in a Slack channel and display them, full screen,
+ScreenShare creates an aqueduct that will route images placed in a Slack channel and display them, full screen,
 on a monitor (hopefully hanging on a wall in a fun space!)
 
 ## Installation
