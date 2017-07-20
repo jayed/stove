@@ -30,6 +30,10 @@ slack_token = environ['slack_token']
 slack_channel = environ['slack_channel']
 
 
+def main():
+    build_config()
+
+
 def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     # if we have an image url, create a file name, update our pointer file,
     # current.json, and put the image on s3
@@ -168,4 +172,5 @@ def build_config():
     else:
         print "Connection to Slack unavailable"
 
-build_config()
+if __name__ == "__main__":
+    main()
