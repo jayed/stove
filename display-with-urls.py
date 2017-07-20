@@ -1,6 +1,5 @@
-from os import path, environ
+from os import environ
 from os.path import splitext, basename
-from random import choice
 import time, json, string, random
 from urlparse import urlparse
 
