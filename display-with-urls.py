@@ -24,11 +24,11 @@ before running this script,
 $ source ./settings.sh
 '''
 
-aws_access_key_id = environ['aws_access_key_id']
-aws_secret_access_key = environ['aws_secret_access_key']
-aws_bucket_name = environ['aws_bucket_name']
-slack_token = environ['slack_token']
-slack_channel = environ['slack_channel']
+aws_access_key_id = environ['AWS_ACCESS_KEY_ID']
+aws_secret_access_key = environ['AWS_SECRET_ACCESS_KEY']
+aws_bucket_name = environ['AWS_BUCKET_NAME']
+slack_token = environ['SLACK_TOKEN']
+slack_channel = environ['SLACK_CHANNEL']
 
 # Possible values for screens. config this.
 destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish']
