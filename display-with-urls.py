@@ -33,12 +33,12 @@ def post_image_to_aws(image_url, file_ext, held_by_slack=False):
     # current.json, and put the image on s3
 
     # Slack headers
-    slack_reqeust_headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
+    slack_request_headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
     auth_value = 'Bearer %s' % slack_token
-    slack_reqeust_headers['Authorization'] = auth_value
+    slack_request_headers['Authorization'] = auth_value
 
     if held_by_slack:
-        response = requests.get(image_url, headers=slack_reqeust_headers)
+        response = requests.get(image_url, headers=slack_request_headers)
     else:
         response = requests.get(image_url)
 
