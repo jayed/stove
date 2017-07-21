@@ -31,20 +31,18 @@ slack_token = environ['SLACK_TOKEN']
 slack_channel = environ['SLACK_CHANNEL']
 
 # Possible values for screens. config this.
-destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish']
+screens = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish']
 # the screen where an image will appear when it's first posted
-default_screen = destinations[0]
+default_screen = screens[0]
 
 
 def main():
     existing_status = get_start_state()
-    print(existing_status)
     # Our connection to the Slack API
     sc = SlackClient(slack_token)
     if sc.rtm_connect():
         while True:
             existing_status = build_config(existing_status, sc)
-            print(existing_status)
             time.sleep(1)
     else:
         print("Connection to Slack unavailable")
@@ -72,7 +70,7 @@ def s3_connect():
     return session.resource("s3")
 
 
-def post_image_to_aws(image_url, file_ext, held_by_slack=False):
+def post_image_to_aws(image_url, filename, file_ext, held_by_slack=False):
     """ Put an image in an S3 bucket """
 
     # Slack headers
@@ -88,8 +86,6 @@ def post_image_to_aws(image_url, file_ext, held_by_slack=False):
 
     data = response.content
 
-    # create a random filename -- could have a collision here?
-    filename = ''.join(random.choice(string.ascii_uppercase) for _ in range(6))
     image_filename = '%s%s' % (filename, file_ext)
 
     # post image with new filename to s3
@@ -105,18 +101,28 @@ def update_current(generated_status):
     s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
 
 
-def extract_destination(obj):
-    """ Get reaction aka emoji from a Slack message or file """
-    destination = default_screen
-    # This returns the last reaction only.
+def extract_destinations(obj):
+    """ Get reactions aka emoji from a Slack message or file """
+    destinations = []
     if 'reactions' in obj.keys():
         for reaction in obj['reactions']:
-            if reaction['name'] in destinations:
-                destination = reaction['name']
-    return destination
+            if reaction['name'] in screens:
+                destinations.append(reaction['name'])
+    if not destinations:
+        destinations = [default_screen]
+    return destinations
 
 
-def update_status(destination, existing_status, generated_status, slack_image_id, url, held_by_slack):
+def generate_filename(status):
+    """ Create a random filename -- don't collide with recent filenames """
+    existing = [x.split('.')[0] for x in status['_mapping'].values()]
+    while (True):
+        filename = ''.join(random.choice(string.ascii_uppercase) for _ in range(6))
+        if filename not in existing:
+            return filename
+
+
+def update_status(destinations, existing_status, generated_status, slack_image_id, url, held_by_slack):
     """ Upload image to S3 if necessary, then update the generated status """
     url_pieces = urlparse(url)
     file_ext = splitext(basename(url_pieces.path))[1]
@@ -135,10 +141,11 @@ def update_status(destination, existing_status, generated_status, slack_image_id
                 raise
     if not_uploaded:
         print("uploading to bucket...")
-        image_filename = post_image_to_aws(url, file_ext, held_by_slack=held_by_slack)
+        filename = generate_filename(existing_status)
+        image_filename = post_image_to_aws(url, filename, file_ext, held_by_slack=held_by_slack)
         existing_status['_mapping'][slack_image_id] = image_filename
-    new_dest = {destination: {'id': slack_image_id, 'url': image_filename}}
-    generated_status.update(new_dest)
+    for destination in destinations:
+        generated_status[destination] = {'id': slack_image_id, 'url': image_filename}
     generated_status['_mapping'] = existing_status['_mapping']
     return generated_status
 
@@ -163,7 +170,7 @@ def build_config(existing_status, sc):
 
     generated_status = {}
     # retrieve recent posts in our channel
-    history = sc.api_call('channels.history', channel=slack_channel, inclusive='true', count=len(destinations))
+    history = sc.api_call('channels.history', channel=slack_channel, inclusive='true', count=len(screens))
 
     # find images posted to channel and build status to update
     # probably not great to rely on order like this:
@@ -175,16 +182,16 @@ def build_config(existing_status, sc):
             # uploaded image
             if 'file' in kl.keys() and 'url_private' in kl['file'].keys():
                 # see if we have reactions along with our uploaded file
-                destination = extract_destination(kl['file'])
+                destinations = extract_destinations(kl['file'])
                 url = kl['file']['url_private']
-                generated_status = update_status(destination, existing_status, generated_status, slack_image_id,
+                generated_status = update_status(destinations, existing_status, generated_status, slack_image_id,
                                                  url, held_by_slack=True)
 
             # if someone pastes text with a link to an image in it
             elif 'attachments' in kl.keys() and 'image_url' in kl['attachments'][0].keys():
-                destination = extract_destination(kl)
+                destinations = extract_destinations(kl)
                 url = kl['attachments'][0]['image_url']
-                generated_status = update_status(destination, existing_status, generated_status, slack_image_id,
+                generated_status = update_status(destinations, existing_status, generated_status, slack_image_id,
                                                  url, held_by_slack=False)
 
     if generated_status:
