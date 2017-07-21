@@ -33,6 +33,10 @@ function get_current() {
 					if (data.hasOwnProperty(dest) && data[dest].url !== current_filename) {
 						current_filename = bucket_url + data[dest].url;
 						$('#image-container').attr("src", current_filename);
+			            if (data[dest].bg !== current_bg_color) {
+                            current_bg_color = data[dest].bg;
+                            $('body').css('background-color', current_bg_color);
+                        }
 					}
 				}
 			}
