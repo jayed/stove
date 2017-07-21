@@ -101,28 +101,31 @@ def update_current(generated_status):
     s3.Object(aws_bucket_name, 'current.json').put(Body=json.dumps(generated_status), CacheControl='max-age=1')
 
 
-def extract_destinations(obj):
+def extract_reactions(obj):
     """ Get reactions aka emoji from a Slack message or file """
     destinations = []
+    bgcolor = '#fff'
     if 'reactions' in obj.keys():
         for reaction in obj['reactions']:
             if reaction['name'] in screens:
                 destinations.append(reaction['name'])
+            elif 'night' in reaction['name']:
+                bgcolor = "#000"
     if not destinations:
         destinations = [default_screen]
-    return destinations
+    return destinations, bgcolor
 
 
 def generate_filename(status):
     """ Create a random filename -- don't collide with recent filenames """
     existing = [x.split('.')[0] for x in status['_mapping'].values()]
-    while (True):
+    while True:
         filename = ''.join(random.choice(string.ascii_uppercase) for _ in range(6))
         if filename not in existing:
             return filename
 
 
-def update_status(destinations, existing_status, generated_status, slack_image_id, url, held_by_slack):
+def update_status(destinations, bgcolor, existing_status, generated_status, slack_image_id, url, held_by_slack):
     """ Upload image to S3 if necessary, then update the generated status """
     url_pieces = urlparse(url)
     file_ext = splitext(basename(url_pieces.path))[1]
@@ -145,7 +148,7 @@ def update_status(destinations, existing_status, generated_status, slack_image_i
         image_filename = post_image_to_aws(url, filename, file_ext, held_by_slack=held_by_slack)
         existing_status['_mapping'][slack_image_id] = image_filename
     for destination in destinations:
-        generated_status[destination] = {'id': slack_image_id, 'url': image_filename}
+        generated_status[destination] = {'id': slack_image_id, 'url': image_filename, 'bg': bgcolor}
     generated_status['_mapping'] = existing_status['_mapping']
     return generated_status
 
@@ -182,17 +185,17 @@ def build_config(existing_status, sc):
             # uploaded image
             if 'file' in kl.keys() and 'url_private' in kl['file'].keys():
                 # see if we have reactions along with our uploaded file
-                destinations = extract_destinations(kl['file'])
+                destinations, bgcolor = extract_reactions(kl['file'])
                 url = kl['file']['url_private']
-                generated_status = update_status(destinations, existing_status, generated_status, slack_image_id,
-                                                 url, held_by_slack=True)
+                generated_status = update_status(destinations, bgcolor, existing_status, generated_status,
+                                                 slack_image_id, url, held_by_slack=True)
 
             # if someone pastes text with a link to an image in it
             elif 'attachments' in kl.keys() and 'image_url' in kl['attachments'][0].keys():
-                destinations = extract_destinations(kl)
+                destinations, bgcolor = extract_reactions(kl)
                 url = kl['attachments'][0]['image_url']
-                generated_status = update_status(destinations, existing_status, generated_status, slack_image_id,
-                                                 url, held_by_slack=False)
+                generated_status = update_status(destinations, bgcolor, existing_status, generated_status,
+                                                 slack_image_id, url, held_by_slack=False)
 
     if generated_status:
         update_current(generated_status)
