@@ -70,7 +70,7 @@ def s3_connect():
     return session.resource("s3")
 
 
-def post_image_to_aws(image_url, file_ext, held_by_slack=False):
+def post_image_to_aws(image_url, filename, file_ext, held_by_slack=False):
     """ Put an image in an S3 bucket """
 
     # Slack headers
@@ -86,8 +86,6 @@ def post_image_to_aws(image_url, file_ext, held_by_slack=False):
 
     data = response.content
 
-    # create a random filename -- could have a collision here?
-    filename = ''.join(random.choice(string.ascii_uppercase) for _ in range(6))
     image_filename = '%s%s' % (filename, file_ext)
 
     # post image with new filename to s3
@@ -115,6 +113,15 @@ def extract_destinations(obj):
     return destinations
 
 
+def generate_filename(status):
+    """ Create a random filename -- don't collide with recent filenames """
+    existing = [x.split('.')[0] for x in status['_mapping'].values()]
+    while (True):
+        filename = ''.join(random.choice(string.ascii_uppercase) for _ in range(6))
+        if filename not in existing:
+            return filename
+
+
 def update_status(destinations, existing_status, generated_status, slack_image_id, url, held_by_slack):
     """ Upload image to S3 if necessary, then update the generated status """
     url_pieces = urlparse(url)
@@ -134,7 +141,8 @@ def update_status(destinations, existing_status, generated_status, slack_image_i
                 raise
     if not_uploaded:
         print("uploading to bucket...")
-        image_filename = post_image_to_aws(url, file_ext, held_by_slack=held_by_slack)
+        filename = generate_filename(existing_status)
+        image_filename = post_image_to_aws(url, filename, file_ext, held_by_slack=held_by_slack)
         existing_status['_mapping'][slack_image_id] = image_filename
     for destination in destinations:
         generated_status[destination] = {'id': slack_image_id, 'url': image_filename}
