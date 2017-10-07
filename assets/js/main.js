@@ -6,7 +6,8 @@ var bucket_url = 'https://s3.amazonaws.com/lilscreenshare/';
 
 // todo: put destinations in current.json
 var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish'];
-var scrum_image_paths = ['./assets/img/scrum1.png', './assets/img/scrum2.png', './assets/img/scrum3.gif', './assets/img/scrum4.gif'];
+var scrum_image_paths = ['./assets/img/scrum1.png', './assets/img/scrum2.png', './assets/img/scrum3.gif', './assets/img/scrum4.gif', './assets/img/scrum5.png'];
+
 
 
 function update_stove() {
