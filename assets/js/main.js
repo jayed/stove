@@ -20,7 +20,7 @@ function update_stove() {
 	// and if not, display the current
 	// we should likely pull scheduled events from current.json?
 	var [scrum_image_path, scrum_background_color] = get_scrum_image();
-	if (!run_scheduled(10, 0, 59, scrum_image_path, scrum_background_color)) {  //standup time - start at 11:00 and run for 5 mins
+	if (!run_scheduled(11, 0, 5, scrum_image_path, scrum_background_color)) {  //standup time - start at 11:00 and run for 5 mins
 		get_current();
 	}
 }
