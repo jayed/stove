@@ -6,15 +6,21 @@ var bucket_url = 'https://s3.amazonaws.com/lilscreenshare/';
 
 // todo: put destinations in current.json
 var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish'];
-var scrum_image_paths = ['./assets/img/scrum1.png', './assets/img/scrum2.png', './assets/img/scrum3.gif', './assets/img/scrum4.gif', './assets/img/scrum5.png'];
-
-
+var scrum_image_paths = [
+		['./assets/img/scrum1.png', '#615120'], 
+		['./assets/img/scrum2.png', "#FFFFFF"], 
+		['./assets/img/scrum3.gif', "#FFFFFF"], 
+		['./assets/img/scrum4.gif', "#242424"],
+		['./assets/img/scrum5.png', "#222222"], 
+		['./assets/img/scrum6.png', "#232323"]
+	];
 
 function update_stove() {
 	// here, we check to see if we have a scheduled event,
 	// and if not, display the current
 	// we should likely pull scheduled events from current.json?
-	if (!run_scheduled(11, 0, 5, get_scrum_image(), '#242424')) {  //standup time - start at 11:00 and run for 5 mins
+	var [scrum_image_path, scrum_background_color] = get_scrum_image();
+	if (!run_scheduled(10, 0, 59, scrum_image_path, scrum_background_color)) {  //standup time - start at 11:00 and run for 5 mins
 		get_current();
 	}
 }
