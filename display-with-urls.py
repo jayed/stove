@@ -183,12 +183,14 @@ def build_config(existing_status, sc):
         if 'ts' in kl:
             slack_image_id = kl['ts']
             # uploaded image
-            if 'file' in kl.keys() and 'url_private' in kl['file'].keys():
-                # see if we have reactions along with our uploaded file
-                destinations, bgcolor = extract_reactions(kl['file'])
-                url = kl['file']['url_private']
-                generated_status = update_status(destinations, bgcolor, existing_status, generated_status,
-                                                 slack_image_id, url, held_by_slack=True)
+            if 'files' in kl:
+                file_info = kl['files'][0]
+                if 'url_private' in file_info:
+                    # see if we have reactions along with our uploaded file
+                    destinations, bgcolor = extract_reactions(file_info)
+                    url = file_info['url_private']
+                    generated_status = update_status(destinations, bgcolor, existing_status, generated_status,
+                                                     slack_image_id, url, held_by_slack=True)
 
             # if someone pastes text with a link to an image in it
             elif 'attachments' in kl.keys() and 'image_url' in kl['attachments'][0].keys():
