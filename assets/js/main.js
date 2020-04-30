@@ -1,17 +1,26 @@
 var current_filename = '';
 var current_bg_color = '#fff';
+alreadyrun = false;
 
 var bucket_url = 'https://s3.amazonaws.com/lilscreenshare/';
 
 // todo: put destinations in current.json
 var destinations = ['racehorse', 'icecream', 'strawberry', 'pepper', 'balloon', 'banana', 'blowfish'];
-
+var scrum_image_paths = [
+		['./assets/img/scrum1.png', '#615120'], 
+		['./assets/img/scrum2.png', "#FFFFFF"], 
+		['./assets/img/scrum3.gif', "#FFFFFF"], 
+		['./assets/img/scrum4.gif', "#242424"],
+		['./assets/img/scrum5.png', "#222222"], 
+		['./assets/img/scrum6.png', "#232323"]
+	];
 
 function update_stove() {
 	// here, we check to see if we have a scheduled event,
 	// and if not, display the current
 	// we should likely pull scheduled events from current.json?
-	if (!run_scheduled(11, 0, 5, './assets/img/gold_scrum.gif', '#242424')) {  //standup time - start at 11:00 and run for 5 mins
+	var [scrum_image_path, scrum_background_color] = get_scrum_image();
+	if (!run_scheduled(11, 0, 5, scrum_image_path, scrum_background_color)) {  //standup time - start at 11:00 and run for 5 mins
 		get_current();
 	}
 }
@@ -44,22 +53,29 @@ function get_current() {
 	});
 }
 
-
 function run_scheduled(hour, min, display_time, file_name, bg_color) {
 	// This logic helps us schedule events
 	var todayHours = new Date().getHours();
 	var todayMinutes = new Date().getMinutes();
 
 	if (todayHours === hour && todayMinutes >= min && todayMinutes < min + display_time) {
-		current_filename = file_name;
-		$('#image-container').attr("src", current_filename);
-		current_bg_color = bg_color;
-		$('body').css('background-color', current_bg_color);
+		// this alreadyrun check makes sure we only sets the scrum image once per day
+		if (alreadyrun == false) {
+			current_filename = file_name;
+			$('#image-container').attr("src", current_filename);
+			current_bg_color = bg_color;
+			$('body').css('background-color', current_bg_color);
+		}
+	    alreadyrun = true;
 		return true;
 	}
 
+	alreadyrun = false;
 	return false;
 }
 
+function get_scrum_image() {
+	return scrum_image_paths[Math.floor(Math.random() * scrum_image_paths.length) ]
+}
 
-setInterval(update_stove, 1000);
+setInterval(update_stove, 1000)
